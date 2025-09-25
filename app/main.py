@@ -22,21 +22,27 @@ def main():
 
     logging.info('Hello')
 
-    query = load_query("ds_lottery_ai_data_cleansing_ueclf_24_sample_100.sql")
-    rows, columns = run_query(query)
+    ## GET SAMPLE DATA TO DEV MVP ##
 
-    df_raw = pd.DataFrame(rows, columns=columns)
-    print("✅ Retrieved rows:", len(df_raw))
-    print(df_raw.head())
+    if GET_SAMPLE_DATA:
 
-    # Save checkpoint
-    checkpoint_path = save_checkpoint(df_raw, "ds_lottery_ai_data_cleansing_ueclf_24_sample_100")
-    print(f"✅ Saved checkpoint at {checkpoint_path}")
+        logging.info('Getting Sample Data')
 
-    # Load it back
-    df_loaded = load_checkpoint(checkpoint_path.name)
-    print("✅ Loaded checkpoint:")
-    print(df_loaded)
+        query = load_query("ds_lottery_ai_data_cleansing_ueclf_24_sample_100.sql")
+        rows, columns = run_query(query)
+
+        df_raw = pd.DataFrame(rows, columns=columns)
+        print("✅ Retrieved rows:", len(df_raw))
+        print(df_raw.head())
+
+        # Save checkpoint
+        checkpoint_path = save_checkpoint(df_raw, "ds_lottery_ai_data_cleansing_ueclf_24_sample_100points")
+        print(f"✅ Saved checkpoint at {checkpoint_path}")
+
+        # Load it back
+        df_loaded = load_checkpoint(checkpoint_path.name)
+        print("✅ Loaded checkpoint:")
+        print(df_loaded)
 
 
 if __name__ == "__main__":

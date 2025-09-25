@@ -1,14 +1,17 @@
-FROM python:3.13-slim
-
+# Base image
+ARG BASE_IMAGE=python:3.10-slim-buster
+FROM $BASE_IMAGE
+ 
 # Set working directory
 WORKDIR /app
-
-# Install dependencies
+ 
+# Copy requirements and install
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy source code
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
+ 
+# Copy the rest of the application
 COPY . .
-
-# Default command (run app)
+ 
+# Default command
 CMD ["python", "main.py"]
