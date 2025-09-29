@@ -7,7 +7,7 @@ CHECKPOINTS_DIR = Path("data/checkpoints")
 CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def save_checkpoint(df: pd.DataFrame, name: str, with_timestamp: bool = True) -> Path:
+def save_checkpoint(df: pd.DataFrame, name: str, with_timestamp: bool = False) -> Path:
     """
     Save a DataFrame as a checkpoint in data/checkpoints.
 
