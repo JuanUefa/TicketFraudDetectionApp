@@ -1,6 +1,6 @@
 import snowflake.connector
 from contextlib import contextmanager
-from utils.env_loader import (
+from utils.input_output_utils.env_loader import (
     SNOWFLAKE_USER,
     SNOWFLAKE_AUTHENTICATOR,
     SNOWFLAKE_ACCOUNT,

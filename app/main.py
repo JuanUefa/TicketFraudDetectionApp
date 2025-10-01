@@ -3,15 +3,17 @@ import uuid
 from datetime import datetime
 import pandas as pd
 
-from utils.env_loader import *
-from utils.snowflake_conn import run_query
-from utils.query_loader import load_query
-from utils.logging_config import setup_logging
-from utils.checkpoints import save_checkpoint, load_checkpoint
-from utils.snowflake_conn import get_snowflake_connection
+from utils.input_output_utils.env_loader import *
+from utils.connection_utils.snowflake_conn import run_query
+from utils.query_utils.query_loader import load_query
+from utils.logging_utils.logging_config import setup_logging
+from utils.input_output_utils.checkpoints import save_checkpoint, load_checkpoint
+from utils.connection_utils.snowflake_conn import get_snowflake_connection
 
 from src.services.data_loader_service import DataLoaderService
+
 from src.pipelines.data_preparation_pipeline import DataPreparationPipeline
+from src.pipelines.data_transformation_pipeline import DataTransformationPipeline
 
 data_loader_service = DataLoaderService()
 
@@ -28,8 +30,6 @@ def main():
 
 
     ## DATA LOADER SERVICE ##
-
-    df_country_iso = data_loader_service.data_loader(query_file="country_code_mapping.sql")
 
     """df_raw = data_loader_service.data_loader(query_file="ds_lottery_ai_data_cleansing_ueclf_24_sample_100.sql")
     logging.info(f"Loaded raw data: {df_raw.shape[0]} rows, {df_raw.shape[1]} columns")
@@ -61,13 +61,18 @@ def main():
 
     ## DATA PREPARATION PIPELINE
 
-    data_preparation_pipeline = DataPreparationPipeline(df, df_country_iso)
+    data_preparation_pipeline = DataPreparationPipeline(data_loader_service, df)
  
     df = data_preparation_pipeline.run()
  
     print(df.head())
 
     print(df.info())
+
+    data_transformation_pipeline = DataTransformationPipeline(df)
+    df = data_transformation_pipeline.run()
+
+    print(df.head())
 
 
 if __name__ == "__main__":
