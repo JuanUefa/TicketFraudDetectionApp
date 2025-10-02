@@ -73,7 +73,7 @@ class DataTransformationService:
         logging.info("Running identity_based_features")
     
         # --- Group by passport_id (one pass instead of 3) ---
-        passport_grp = df.groupby("passport_id").agg(
+        passport_grp = df.groupby("passport_id", observed=True).agg(
             passport_id_counts=("passport_id", "size"),
             name_variation_per_passport=("full_name", "nunique"),
             unique_emails_per_passport=("email", "nunique"),
@@ -86,7 +86,7 @@ class DataTransformationService:
         df["name_variation_flag"] = (df["name_variation_per_passport"] > 1).astype(int)
     
         # --- Group by contact_number separately (needed only once) ---
-        phone_counts = df.groupby("contact_number")["contact_number"].transform("count")
+        phone_counts = df.groupby("contact_number", observed=True)["contact_number"].transform("count")
         df["phone_counts"] = phone_counts
     
         # Drop intermediate
@@ -99,15 +99,15 @@ class DataTransformationService:
         logging.info("Running behavioral_fraud_features")
     
         # --- Precompute app timestamp once ---
-        df["app_ts"] = pd.to_datetime(df["app_date"], errors="coerce").astype("int64") // 1_000_000_000
+        df["app_ts"] = (pd.to_datetime(df["app_date"], errors="coerce").astype("int64") // 10**9).astype("int32")
     
         # --- Groupby per passport: count + lag ---
-        passport_grp = df.groupby("passport_id").agg(
+        passport_grp = df.groupby("passport_id", observed=True).agg(
             app_count_per_passport=("passport_id", "size"),
         )
     
         # Shifted timestamps (time since last app)
-        df["last_app_ts"] = df.groupby("passport_id")["app_ts"].shift(1)
+        df["last_app_ts"] = df.groupby("passport_id", observed=True)["app_ts"].shift(1)
         df["time_since_last_app"] = df["app_ts"] - df["last_app_ts"]
     
         # Rapid submission flag (< 1h)
@@ -117,7 +117,7 @@ class DataTransformationService:
         df = df.merge(passport_grp, on="passport_id", how="left")
     
         # --- Groupby per IP (one pass) ---
-        df["app_count_per_ip"] = df.groupby("ip_short")["ip_short"].transform("count")
+        df["app_count_per_ip"] = df.groupby("ip_short", observed=True)["ip_short"].transform("count")
     
         # --- Total applications submitted across *_app cols ---
         app_cols = [
@@ -141,7 +141,7 @@ class DataTransformationService:
         ).astype("int8")
     
         # --- Multiple cities per postcode ---
-        postcode_city_count = df.groupby("postcode")["city"].transform("nunique")
+        postcode_city_count = df.groupby("postcode", observed=True)["city"].transform("nunique")
         df["postcode_multiple_cities"] = (postcode_city_count > 1).astype("int8")
     
         return df
@@ -152,14 +152,14 @@ class DataTransformationService:
     
         # --- Aggregate once for IP + Browser ---
         agg = (
-            df.groupby(["ip_short", "browser"])["passport_id"]
+            df.groupby(["ip_short", "browser"], observed=True)["passport_id"]
             .nunique()
             .reset_index(name="ip_browser_nunique")
         )
     
         # Separate IP-only and Browser-only counts
-        ip_shared = df.groupby("ip_short")["passport_id"].nunique().rename("ip_shared")
-        browser_shared = df.groupby("browser")["passport_id"].nunique().rename("browser_shared")
+        ip_shared = df.groupby("ip_short", observed=True)["passport_id"].nunique().rename("ip_shared")
+        browser_shared = df.groupby("browser", observed=True)["passport_id"].nunique().rename("browser_shared")
     
         # Map results back to df
         df = df.join(ip_shared, on="ip_short").join(browser_shared, on="browser")

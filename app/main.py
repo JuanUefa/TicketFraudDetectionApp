@@ -14,10 +14,13 @@ from src.services.data_loader_service import DataLoaderService
 
 from src.pipelines.data_preparation_pipeline import DataPreparationPipeline
 from src.pipelines.data_transformation_pipeline import DataTransformationPipeline
+from src.pipelines.feature_engineering_pipeline import FeatureEngineeringPipeline
 
 data_loader_service = DataLoaderService()
 
 def main():
+
+    pd.set_option("display.float_format", "{:.3f}".format)
 
     setup_logging(log_file=LOGS_FILE, level=LOG_LEVEL)
     run_id = str(uuid.uuid4())
@@ -73,6 +76,12 @@ def main():
     df = data_transformation_pipeline.run()
 
     print(df.head())
+
+    pipeline_engineering_pipeline = FeatureEngineeringPipeline()
+    df = pipeline_engineering_pipeline.run(df)
+ 
+    print("Feature Engineering")
+    print(df)
 
 
 if __name__ == "__main__":

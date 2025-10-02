@@ -30,7 +30,7 @@ class DataTransformationPipeline:
             .pipe(data_transformation_service.uncommon_browser_language)
             .pipe(data_transformation_service.unusual_local_time)
             .pipe(data_transformation_service.city_country_mismatch)
-            .pipe(data_transformation_service.prune_columns, keep=['passport_id', 'cleansed'])
+            .pipe(data_transformation_service.prune_columns)
         )
 
         logging.info("Data Transformation Pipeline finished")
