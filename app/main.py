@@ -15,6 +15,7 @@ from src.services.data_loader_service import DataLoaderService
 from src.pipelines.data_preparation_pipeline import DataPreparationPipeline
 from src.pipelines.data_transformation_pipeline import DataTransformationPipeline
 from src.pipelines.feature_engineering_pipeline import FeatureEngineeringPipeline
+from src.pipelines.clustering_pipeline import ClusteringPipeline
 
 data_loader_service = DataLoaderService()
 
@@ -81,6 +82,12 @@ def main():
     df = pipeline_engineering_pipeline.run(df)
  
     print("Feature Engineering")
+    print(df)
+
+ 
+    clustering_pipeline = ClusteringPipeline()
+    df = clustering_pipeline.run(df)
+    print(df.columns)
     print(df)
 
 
