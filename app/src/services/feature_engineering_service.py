@@ -40,7 +40,7 @@ class FeatureEngineeringService:
  
     # 2. Detect highly correlated pairs
  
-    def detect_highly_correlated_columns(self, df: pd.DataFrame, threshold: float = 0.75):
+    def detect_highly_correlated_columns(self, df: pd.DataFrame, threshold: float = 0.95):
         """
         Detect highly correlated column pairs in a DataFrame.
     

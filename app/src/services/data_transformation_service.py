@@ -1,7 +1,9 @@
 import logging
 import pandas as pd
 import numpy as np
-
+import networkx as nx
+from datasketch import MinHash, MinHashLSH
+    
 from utils.services_utils.data_transformation_utils import DataTransformationUtils
 
 data_transformation_utils = DataTransformationUtils()
@@ -65,6 +67,59 @@ class DataTransformationService:
         # Direct mapping from value_counts (avoids dict conversion)
         df["domain_freq"] = df["email_domain"].map(df["email_domain"].value_counts())
         df["tld_freq"] = df["email_tld"].map(df["email_tld"].value_counts())
+    
+        return df
+    
+
+    
+    def email_based_features(self, df: pd.DataFrame, include_name_match: bool = False) -> pd.DataFrame:
+        """
+        Extracts numerical and semantic features from the email username.
+        Depends on `email_username`, `first_name`, and `last_name` columns.
+        Vectorized for efficiency.
+        """
+        
+        logging.info("Running email_based_features")
+        utils = DataTransformationUtils()
+    
+        # --- Basic validation ---
+        if "email_username" not in df.columns:
+            logging.warning("Column 'email_username' missing — skipping email_based_features.")
+            return df
+    
+        # --- Prepare input ---
+        usernames = df["email_username"].fillna("").astype(str)
+    
+        # --- Vectorized feature extraction ---
+        df["username_digit_count"] = utils.count_digits(usernames)
+        df["username_special_count"] = utils.count_special_chars(usernames)
+        df["username_unique_chars"] = utils.count_unique_chars(usernames)
+        df["username_digit_ratio"] = utils.digit_ratio(usernames)
+        df["username_special_char_ratio"] = utils.special_char_ratio(usernames)
+        df["username_entropy"] = utils.text_entropy(usernames)
+        df["username_kolmogorov_complexity"] = utils.kolmogorov_complexity(usernames)
+        df["username_numeric_seq_count"] = utils.count_numeric_sequences(usernames)
+    
+        # --- Optional: inverse semantic score ---
+        if {"first_name", "last_name"}.issubset(df.columns):
+            df["inv_semantic_score"] = df.apply(
+                lambda r: utils.inverse_semantic_score(r["first_name"], r["last_name"], r["email_username"]),
+                axis=1
+            )
+        else:
+            logging.warning("Columns 'first_name' or 'last_name' missing — skipping inverse_semantic_score.")
+    
+        # --- Optional: include name-username match flags ---
+        if include_name_match and {"first_name", "last_name"}.issubset(df.columns):
+            logging.info("Including name match flags in email_based_features")
+    
+            match_results = df.apply(
+                lambda r: utils.match_name_in_username(r["first_name"], r["last_name"], r["email_username"]),
+                axis=1
+            )
+    
+            # Expand match results into individual columns
+            df = pd.concat([df, match_results.apply(pd.Series)], axis=1)
     
         return df
     
@@ -313,4 +368,14 @@ class DataTransformationService:
             # drop only known intermediate columns
             df = df.drop(columns=[c for c in drop_cols if c in df.columns], errors="ignore")
     
+        return df
+    
+
+    def compute_username_similarity_features(self, df: pd.DataFrame, visualize: bool = True) -> pd.DataFrame:
+        """
+        Compute Damerau-Levenshtein username similarity and store plots.
+        """
+        logging.info("Running username similarity computation...")
+        df, _ = data_transformation_utils.username_similarity_score(df, visualize=visualize)
+        logging.info(df.columns)
         return df

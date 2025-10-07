@@ -58,15 +58,16 @@ def main():
 
     ## WORK OFFLINE WITH SAMPLE DATA ##
     # Load it back
-    test_file_path = "C:\\Users\\juan.prada\\OneDrive - civica-soft.com\\Documentos\\UEFA\\TicketFraudDetectionApp\\app\\data\\checkpoints\\ds_lottery_ai_data_cleansing_ueclf_24_sample_100points.csv"
+    """test_file_path = "C:\\Users\\juan.prada\\OneDrive - civica-soft.com\\Documentos\\UEFA\\TicketFraudDetectionApp\\app\\data\\checkpoints\\ds_lottery_ai_data_cleansing_ueclf_24_sample_100points.csv"
     df = load_checkpoint(test_file_path) #checkpoint_path.name)
-    print("✅ Loaded checkpoint:")
-    print(df)
+    print("Loaded checkpoint:")
+    print(df)"""
 
     ## DATA PREPARATION PIPELINE
 
+    df = data_loader_service.data_loader(query_file="ds_lottery_ai_data_cleansing_ueclf_24_sample_100.sql")
+
     data_preparation_pipeline = DataPreparationPipeline(data_loader_service, df)
- 
     df = data_preparation_pipeline.run()
  
     print(df.head())
