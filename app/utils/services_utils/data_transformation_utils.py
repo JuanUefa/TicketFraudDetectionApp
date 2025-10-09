@@ -1,4 +1,5 @@
 # utils/services_utils/data_transformation_utils.py
+from __future__ import annotations
 import re
 import zlib
 import numpy as np
@@ -11,9 +12,22 @@ from difflib import SequenceMatcher
 from nltk.util import ngrams
 from scipy.stats import entropy
 from functools import lru_cache
-from datasketch import MinHash, MinHashLSH
 import textdistance
+from typing import List, Tuple, Optional, Dict
+import time
  
+ 
+# Reuse the core utils you already have
+from utils.model_utils.username_similarity_utils import (
+    norm,
+    safe_cast_int,
+    safe_cast_float,
+    user_features_sum_mean_same_cluster,
+)
+from src.models.username_similarity_model import UsernameSimilarityModel
+from utils.model_utils.username_similarity_utils import *
+ 
+logger = logging.getLogger(__name__)
  
 class DataTransformationUtils:
     """
@@ -310,3 +324,243 @@ class DataTransformationUtils:
  
         logging.info(f"Username similarity computation completed successfully for {n:,} usernames.")
         return df_result, levenshtein_damerau_df
+    
+ 
+    def finalize_username_similarity_outputs(
+        self, 
+        df: pd.DataFrame,
+        usernames: List[str],
+        refined_pairs: pd.DataFrame,
+        user_clusters_unique: pd.DataFrame,
+        *,
+        cluster_edge_min_sim: float,
+        neighbor_threshold: int,
+        visualize: bool = False,
+        audit_top_k: int = 20,
+        output_dir: str = ".",
+        log: Optional[logging.Logger] = None,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """
+        Post-processing:
+        - annotate refined_pairs with cluster IDs (and tidy columns/dtypes)
+        - compute per-user SUM & MEAN features (same-cluster only)
+        - build FULL user_clusters mapping (includes isolates as -1)
+        - merge cluster_id + user features back into df (out_df)
+        - optional audit CSV
+        """
+        _log = log or logger
+
+        # ---------- annotate pairs with cluster IDs ----------
+        refined_pairs_annot = refined_pairs.copy()
+        if not refined_pairs.empty and not user_clusters_unique.empty:
+            _log.info("Annotating pairs with cluster IDs...")
+            _u2c = user_clusters_unique.set_index("email_username")["cluster_id"]
+            refined_pairs_annot["cluster_id_1"] = refined_pairs_annot["user_1"].map(_u2c)
+            refined_pairs_annot["cluster_id_2"] = refined_pairs_annot["user_2"].map(_u2c)
+            refined_pairs_annot["same_cluster"] = (
+                refined_pairs_annot["cluster_id_1"] == refined_pairs_annot["cluster_id_2"]
+            ).astype(int)
+            refined_pairs_annot["pair_cluster_id"] = np.where(
+                refined_pairs_annot["same_cluster"] == 1,
+                refined_pairs_annot["cluster_id_1"],
+                -1,
+            )
+            # safe casts
+            refined_pairs_annot["cluster_id_1"] = safe_cast_int(refined_pairs_annot["cluster_id_1"], default=-1)
+            refined_pairs_annot["cluster_id_2"] = safe_cast_int(refined_pairs_annot["cluster_id_2"], default=-1)
+            refined_pairs_annot["same_cluster"]  = safe_cast_int(refined_pairs_annot["same_cluster"], 0)
+            refined_pairs_annot["pair_cluster_id"] = safe_cast_int(refined_pairs_annot["pair_cluster_id"], -1)
+
+            base_cols = ["user_1","user_2","cluster_id_1","cluster_id_2","same_cluster","pair_cluster_id"]
+            other_cols = [c for c in refined_pairs_annot.columns if c not in base_cols]
+            refined_pairs_annot = refined_pairs_annot[base_cols + other_cols]
+
+            same_cluster_edges = int((refined_pairs_annot["same_cluster"] == 1).sum()) if not refined_pairs_annot.empty else 0
+            _log.info(
+                "Pairs annotated with clusters: %s | same-cluster edges: %s",
+                f"{len(refined_pairs_annot):,}", f"{same_cluster_edges:,}"
+            )
+        else:
+            _log.info("No refined pairs or no user_clusters - skipping pair annotations.")
+
+        # ---------- per-user SUM & MEAN features ----------
+        user_feats = user_features_sum_mean_same_cluster(
+            refined_pairs_with_clusters=refined_pairs_annot,
+            cluster_edge_min_sim=cluster_edge_min_sim,
+            neighbor_threshold=neighbor_threshold,
+        )
+        _log.info("Per-user features computed for %s users", f"{len(user_feats):,}")
+
+        # ---------- full user_clusters mapping (ALL usernames; isolates = -1) ----------
+        all_users_df = pd.DataFrame({"email_username": usernames})
+        user_clusters_full = all_users_df.merge(user_clusters_unique, how="left", on="email_username")
+        user_clusters_full["cluster_id"] = safe_cast_int(user_clusters_full["cluster_id"], default=-1)
+        _log.info(
+            "Full user->cluster mapping: %s rows (isolates=%s)",
+            f"{len(user_clusters_full):,}",
+            f"{int((user_clusters_full['cluster_id'] == -1).sum()):,}",
+        )
+
+        # ---------- out_df with cluster_id + user scores ----------
+        out_df = df.copy()
+        out_df["_uname_norm"] = out_df["email_username"].map(norm)
+        out_df = out_df.merge(
+            user_clusters_full.rename(columns={"email_username": "_uname_norm"}),
+            how="left",
+            on="_uname_norm",
+        )
+        out_df = out_df.merge(
+            user_feats.rename(columns={"email_username": "_uname_norm"}),
+            how="left",
+            on="_uname_norm",
+        )
+        out_df.drop(columns=["_uname_norm"], inplace=True, errors="ignore")
+
+        # Fill defaults & cast
+        if "cluster_id" in out_df.columns:
+            out_df["cluster_id"] = safe_cast_int(out_df["cluster_id"], default=-1)
+        for col in ["username_similarity_score", "username_similarity_mean_score"]:
+            if col in out_df.columns:
+                out_df[col] = safe_cast_float(out_df[col], 0.0)
+        for col in ["similarity_neighbors_count", "too_many_similar_usernames_flag"]:
+            if col in out_df.columns:
+                out_df[col] = safe_cast_int(out_df[col], 0)
+
+        flagged = int(out_df.get("too_many_similar_usernames_flag", pd.Series([], dtype=int)).sum())
+        _log.info(
+            "out_df ready: %s rows x %s cols; flagged users=%s",
+            f"{len(out_df):,}", f"{out_df.shape[1]:,}", f"{flagged:,}"
+        )
+
+        # ---------- optional audit ----------
+        if visualize and not refined_pairs_annot.empty:
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+                path = os.path.join(output_dir, "username_similarity_top_pairs.csv")
+                refined_pairs_annot.sort_values("similarity", ascending=False).head(audit_top_k).to_csv(path, index=False)
+                _log.info("Saved top %d pairs to %s", audit_top_k, path)
+            except Exception as e:
+                _log.warning("Failed to save audit CSV: %s", e)
+
+        return out_df, refined_pairs_annot, user_clusters_full, user_feats
+
+
+    def username_similarity_score_optimized(
+        self, 
+        df: pd.DataFrame,
+        visualize: bool = False,
+        num_perm: int = 128,
+        thresholds: Dict[str, float] | None = None,
+        min_refined_similarity: float = 0.70,
+        neighbor_threshold: int = 2,
+        cluster_edge_min_sim: float = 0.70,
+        cluster_lsh_threshold: float = 0.55,
+        cluster_link_min_sim: float = 0.65,
+        audit_top_k: int = 20,
+        output_dir: str = ".",
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """
+        Orchestrator: LSH -> candidates -> exact refinement -> clusters (+isolates=-1)
+        -> per-user scores -> out_df merge -> cluster links (isolates excluded by default)
+        """
+        t_start = time.perf_counter()
+        logger.info("username_similarity_score_optimized: start")
+
+        if "email_username" not in df.columns:
+            logger.error("Input DataFrame is missing 'email_username' column.")
+            raise ValueError("df must contain 'email_username'")
+
+        logger.info(
+            "Params | num_perm=%s | min_refined_similarity=%s | cluster_edge_min_sim=%s | "
+            "cluster_lsh_threshold=%s | cluster_link_min_sim=%s | neighbor_threshold=%s",
+            num_perm, min_refined_similarity, cluster_edge_min_sim,
+            cluster_lsh_threshold, cluster_link_min_sim, neighbor_threshold
+        )
+        if thresholds is not None:
+            logger.info("Per-view LSH thresholds: %s", thresholds)
+
+        # 1) Unique normalized usernames
+        usernames = (df["email_username"].map(norm).replace("", np.nan).dropna().unique().tolist())
+        n_users = len(usernames)
+        logger.info("Unique normalized usernames: %s", f"{n_users:,}")
+
+        # 2) Build multi-view LSH indices
+        t0 = time.perf_counter()
+        indices = build_multi_view_indices(usernames, num_perm=num_perm, thresholds=thresholds)
+        logger.info(
+            "Built LSH indices in %.2fs (raw=%s, sep=%s, shape=%s, deleet=%s)",
+            time.perf_counter() - t0,
+            f"{len(indices['raw'][1]):,}",
+            f"{len(indices['sep'][1]):,}",
+            f"{len(indices['shape'][1]):,}",
+            f"{len(indices['deleet'][1]):,}",
+        )
+
+        # 3) Candidate pairs (union across views)
+        t1 = time.perf_counter()
+        candidates = multi_view_candidates(indices)
+        cand_time = time.perf_counter() - t1
+        avg_cand_per_user = (2 * len(candidates) / n_users) if n_users else 0.0
+        logger.info(
+            "LSH candidates: %s (avg ~ %.2f per user) in %.2fs",
+            f"{len(candidates):,}", avg_cand_per_user, cand_time
+        )
+
+        # 4) Exact refinement
+        t2 = time.perf_counter()
+        refined_pairs = refine_pairs(candidates, min_sim=min_refined_similarity)
+        logger.info(
+            "Refined pairs kept (>= %.2f): %s (from %s) in %.2fs",
+            min_refined_similarity, f"{len(refined_pairs):,}", f"{len(candidates):,}", time.perf_counter() - t2
+        )
+
+        # 5) Clusters (+ isolates = -1) & summary
+        t3 = time.perf_counter()
+        user_clusters_unique, cluster_summary = extract_clusters_with_labels(
+            refined_pairs,
+            min_sim=cluster_edge_min_sim,
+            include_singletons=True,
+            all_usernames=usernames,
+            include_isolates_summary=True
+        )
+        multi_ct = int(cluster_summary.loc[cluster_summary["cluster_id"] != -1, "cluster_id"].nunique()) if not cluster_summary.empty else 0
+        iso_ct   = int(cluster_summary.loc[cluster_summary["cluster_id"] == -1, "size"].sum()) if not cluster_summary.empty else 0
+        logger.info(
+            "Cluster extraction in %.2fs | multi-user clusters: %s | isolates summary size: %s",
+            time.perf_counter() - t3,
+            f"{multi_ct:,}", f"{iso_ct:,}"
+        )
+
+        # 6) Post-process (annotate pairs, user scores, full mapping, out_df)
+        out_df, pairs_df, user_clusters_full, user_feats = self.finalize_username_similarity_outputs(
+            df=df,
+            usernames=usernames,
+            refined_pairs=refined_pairs,
+            user_clusters_unique=user_clusters_unique,
+            cluster_edge_min_sim=cluster_edge_min_sim,
+            neighbor_threshold=neighbor_threshold,
+            visualize=visualize,
+            audit_top_k=audit_top_k,
+            output_dir=output_dir,
+            log=logger
+        )
+
+        # 7) Inter-cluster links (exclude isolates by default)
+        t4 = time.perf_counter()
+        cluster_links = cluster_links_via_signatures(
+            cluster_summary=cluster_summary,
+            user_clusters=user_clusters_full,
+            num_perm=num_perm,
+            lsh_threshold=cluster_lsh_threshold,
+            min_sim=cluster_link_min_sim,
+            include_isolates=False
+        )
+        logger.info(
+            "Inter-cluster links: %s in %.2fs (isolates excluded)",
+            f"{len(cluster_links):,}", time.perf_counter() - t4
+        )
+
+        logger.info("username_similarity_score_optimized: done in %.2fs", time.perf_counter() - t_start)
+        return out_df, pairs_df, user_clusters_full, cluster_summary, cluster_links
+
+

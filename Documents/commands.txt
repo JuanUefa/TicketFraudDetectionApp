@@ -1,0 +1,77 @@
+## RUN CODE ##
+python main.py
+python3 main.py
+
+
+#### VENV ####
+## CREATE VENV ##
+python -m venv venv
+## ACTIVATE ##
+venv\Scripts\Activate.ps1
+## INSTALL REQUIREMENTS ##
+## DEACTIVATE ##
+deactivate
+
+## RESET VENV ##
+Remove-Item -Recurse -Force venv
+python -m venv venv
+venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+
+
+tree -L 3
+tree -L 4
+
+tree -L 3
+tree -L 4
+
+git clone https://JuanUefa@github.com/JuanUefa/TicketFraudDetectionApp.git
+
+## COMANDOS QUE FUNCIONAN ##
+snow connection add
+
+connection_name: ml_sandbox
+account: a40937.eu-central-1.privatelink
+user: jpra@uefa.ch
+warehouse: DA_ML_DWH
+database: UEFA_DEV_DWH
+schema: ML_SANDBOX
+role: ML_SPECIALIST_ROLE
+authenticator: externalbrowser
+
+snow connection list 
+
+snow connection set-default ml_sandbox
+snow connection set-default ml_sandbox_wo_user
+snow connection set-default ml_sandbox_user_ch
+
+¡¡ SIN VPN !! repo url = uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo
+docker build --rm --platform linux/amd64 -t uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest .
+
+¡¡ CON VPN !! 
+snow spcs image-registry token --format=JSON | docker login uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo -u 0sessiontoken --password-stdin
+
+docker push uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image
+
+
+## PROBLEMAS CON PODMAN ##
+podman machine list
+podman machine stop NOMBRE_MAQUINA
+podman machine start NOMBREM_MAQUINA
+podman system connection default NOMBRE_MAQUINA
+podman system connection list
+podman info
+
+    column_values = [
+        length(col("email_username")),
+        call_udf("COUNT_DIGITS", col("email_username")),
+        call_udf("COUNT_SPECIAL_CHARS", col("email_username")),
+        call_udf("COUNT_UNIQUE_CHARS", col("email_username")),
+        call_udf("DIGIT_RATIO", col("email_username")),
+        call_udf("SPECIAL_CHAR_RATIO", col("email_username")),
+        call_udf("TEXT_ENTROPY", col("email_username")),
+        call_udf("KOLMOGOROV_COMPLEXITY", col("email_username")),
+        call_udf("COUNT_NUMERIC_SEQUENCES", col("email_username ")),
+        call_udf("INVERSE_SEMANTIC_SCORE", col("first_name"), col("last_name"), col("email_username"))
+    ]

@@ -1,8 +1,13 @@
+from __future__ import annotations
 import logging
 import pandas as pd
 import numpy as np
-import networkx as nx
-from datasketch import MinHash, MinHashLSH
+ 
+import logging
+ 
+import numpy as np
+import pandas as pd 
+logger = logging.getLogger(__name__)
     
 from utils.services_utils.data_transformation_utils import DataTransformationUtils
 
@@ -14,7 +19,11 @@ class DataTransformationService:
     Compute identity, behavioral, geolocation, fingerprint, and other fraud features.
     """
     def __init__(self):
-        pass
+        self.username_pairs_df = None
+        self.username_user_clusters = None
+        self.username_cluster_summary = None
+        self.username_cluster_links = None
+ 
 
 
     def email_numerical_representation(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -370,12 +379,57 @@ class DataTransformationService:
     
         return df
     
-
-    def compute_username_similarity_features(self, df: pd.DataFrame, visualize: bool = True) -> pd.DataFrame:
+ 
+    def compute_username_similarity_features(
+        self,
+        df: pd.DataFrame,
+        *,
+        visualize: bool = False,
+        num_perm: int = 128,
+        thresholds: dict | None = None,
+        min_refined_similarity: float = 0.70,
+        neighbor_threshold: int = 2,
+        cluster_edge_min_sim: float = 0.70,
+        cluster_lsh_threshold: float = 0.55,
+        cluster_link_min_sim: float = 0.65,
+        audit_top_k: int = 20,
+        output_dir: str = ".",
+    ) -> pd.DataFrame:
         """
-        Compute Damerau-Levenshtein username similarity and store plots.
+        Wrapper so the pipeline can `.pipe(...)` this stage and still get back a DataFrame.
+        Also stores useful artifacts as attributes for downstream audit/inspection.
         """
-        logging.info("Running username similarity computation...")
-        df, _ = data_transformation_utils.username_similarity_score(df, visualize=visualize)
-        logging.info(df.columns)
-        return df
+        (out_df,
+         pairs_df,
+         user_clusters,
+         cluster_summary,
+         cluster_links) = data_transformation_utils.username_similarity_score_optimized(
+            df=df,
+            visualize=visualize,
+            num_perm=num_perm,
+            thresholds=thresholds,
+            min_refined_similarity=min_refined_similarity,
+            neighbor_threshold=neighbor_threshold,
+            cluster_edge_min_sim=cluster_edge_min_sim,
+            cluster_lsh_threshold=cluster_lsh_threshold,
+            cluster_link_min_sim=cluster_link_min_sim,
+            audit_top_k=audit_top_k,
+            output_dir=output_dir,
+        )
+ 
+        # stash artifacts
+        self.username_pairs_df = pairs_df
+        self.username_user_clusters = user_clusters
+        self.username_cluster_summary = cluster_summary
+        self.username_cluster_links = cluster_links
+ 
+        logger.info(
+            "Username similarity stage: pairs=%d, clusters=%d (+ isolates bucket), links=%d",
+            len(pairs_df),
+            int(cluster_summary[cluster_summary['cluster_id'] != -1]['cluster_id'].nunique())
+            if not cluster_summary.empty else 0,
+            len(cluster_links),
+        )
+        return out_df
+    
+ 
