@@ -430,6 +430,9 @@ class DataTransformationService:
             if not cluster_summary.empty else 0,
             len(cluster_links),
         )
+
+        out_df = out_df.rename(columns={'cluster_id': 'username_similarity_cluster'})
+
         return out_df
     
  
