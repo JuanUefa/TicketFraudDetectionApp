@@ -63,15 +63,9 @@ podman system connection default NOMBRE_MAQUINA
 podman system connection list
 podman info
 
-    column_values = [
-        length(col("email_username")),
-        call_udf("COUNT_DIGITS", col("email_username")),
-        call_udf("COUNT_SPECIAL_CHARS", col("email_username")),
-        call_udf("COUNT_UNIQUE_CHARS", col("email_username")),
-        call_udf("DIGIT_RATIO", col("email_username")),
-        call_udf("SPECIAL_CHAR_RATIO", col("email_username")),
-        call_udf("TEXT_ENTROPY", col("email_username")),
-        call_udf("KOLMOGOROV_COMPLEXITY", col("email_username")),
-        call_udf("COUNT_NUMERIC_SEQUENCES", col("email_username ")),
-        call_udf("INVERSE_SEMANTIC_SCORE", col("first_name"), col("last_name"), col("email_username"))
-    ]
+podman machine list
+podman machine stop uefa
+podman machine start uefa
+podman system connection default uefa
+podman system connection list
+podman info

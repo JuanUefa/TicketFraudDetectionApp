@@ -4,11 +4,7 @@ from datetime import datetime
 import pandas as pd
 
 from utils.input_output_utils.env_loader import *
-from utils.connection_utils.snowflake_conn import run_query
-from utils.query_utils.query_loader import load_query
 from utils.logging_utils.logging_config import setup_logging
-from utils.input_output_utils.checkpoints import save_checkpoint, load_checkpoint
-from utils.connection_utils.snowflake_conn import get_snowflake_connection
 
 from src.services.data_loader_service import DataLoaderService
 
@@ -47,14 +43,14 @@ def main():
     rows, columns = run_query(query)
 
     df_raw = pd.DataFrame(rows, columns=columns)
-    print("✅ Retrieved rows:", len(df_raw))
+    print("Retrieved rows:", len(df_raw))
     print(df_raw.head()) """
 
     ## SAVE CHECKPOINTS ##
     # Save checkpoint
     """checkpoint_path = save_checkpoint(df_raw, "ds_lottery_ai_data_cleansing_ueclf_24_sample_100points")
     print(checkpoint_path)
-    print(f"✅ Saved checkpoint at {checkpoint_path}")"""
+    print(f"Saved checkpoint at {checkpoint_path}")"""
 
     ## WORK OFFLINE WITH SAMPLE DATA ##
     # Load it back
@@ -65,7 +61,7 @@ def main():
 
     ## DATA PREPARATION PIPELINE
 
-    df = data_loader_service.data_loader(query_file="ds_lottery_ai_data_cleansing_ueclf_24_sample_1000.sql")
+    df = data_loader_service.data_loader(query_file="ds_lottery_ai_data_cleansing_ueclf_24_sample_100.sql")
 
     data_preparation_pipeline = DataPreparationPipeline(data_loader_service, df)
     df = data_preparation_pipeline.run()
@@ -117,6 +113,8 @@ def main():
     df = clustering_pipeline.run(df)
     print(df.columns)
     print(df)
+
+    data_loader_service.save_df_to_snowflake(df, run_id=run_id)
 
 
 if __name__ == "__main__":
