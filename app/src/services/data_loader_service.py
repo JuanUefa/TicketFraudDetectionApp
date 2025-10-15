@@ -49,6 +49,26 @@ class DataLoaderService:
     
         return df
     
+    
+    def load_table_dynamic(self, table_name: str, sample_rows: int = None) -> pd.DataFrame:
+        """
+        Loads all rows from a Snowflake table unless sample_rows is specified.
+        """
+        from utils.connection_utils.snowflake_conn import run_query
+        logging.info(f"Loading table '{table_name}' from Snowflake...")
+    
+        if sample_rows:
+            query = f"SELECT * FROM {table_name} TABLESAMPLE ({sample_rows} ROWS);"
+            logging.info(f"Sampling {sample_rows} rows for testing.")
+        else:
+            query = f"SELECT * FROM {table_name};"
+            logging.info("Loading ALL rows from table (no sampling).")
+    
+        rows, columns = run_query(query)
+        df = pd.DataFrame(rows, columns=columns)
+        logging.info(f"Loaded {df.shape[0]} rows × {df.shape[1]} columns.")
+        return df
+        
 
     def save_df_to_snowflake(
         self,
