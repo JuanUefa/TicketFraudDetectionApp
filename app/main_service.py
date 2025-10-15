@@ -72,23 +72,55 @@ def run_tfd_pipeline(table_name: str, sample_rows: int = None):
 def healthcheck():
     return "Service is healthy", 200
  
+
 @app.route("/run", methods=["GET", "POST"])
 def run():
+    """
+    Runs the Ticket Fraud Detection pipeline.
+    - GET  → for local debugging via browser or curl
+    - POST → for Snowflake service / API integration
+    """
     try:
+        # --- Handle GET (local testing) ---
         if request.method == "GET":
-            table_name = request.args.get("table_name", "UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24")
+            table_name = request.args.get(
+                "table_name",
+                "UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24"
+            )
             sample_rows = int(request.args.get("sample_rows", 100))
-            logger.info(f"GET /run: {table_name}, sample_rows={sample_rows}")
+            logger.info(f"[GET] /run → table_name={table_name}, sample_rows={sample_rows}")
+ 
+        # --- Handle POST (Snowflake integration) ---
         elif request.method == "POST":
             payload = request.get_json(force=True)
-            logger.info(f"POST /run received payload: {payload}")
+            logger.info(f"[POST] /run received JSON payload: {payload}")
+ 
             table_name = payload.get("table_name")
             sample_rows = payload.get("sample_rows", 100)
-        result = run_tfd_pipeline(table_name, sample_rows)
-        return jsonify(result)
+ 
+        # --- Basic validation ---
+        if not table_name:
+            return make_response(jsonify({"error": "Missing 'table_name'"}), 400)
+ 
+        # --- Run the full pipeline ---
+        result_summary = run_tfd_pipeline(table_name, sample_rows)
+ 
+        # --- Return structured response ---
+        response = {
+            "status": "success",
+            "table_name": table_name,
+            "sample_rows": sample_rows,
+            "run_id": result_summary.get("run_id", str(uuid.uuid4())),
+            "rows_processed": result_summary.get("rows_processed", "unknown"),
+            "timestamp": datetime.now().isoformat(),
+        }
+        return jsonify(response)
+ 
     except Exception as e:
-        logger.exception("Error running TFD pipeline")
-        return make_response(jsonify({"status": "error", "message": str(e)}), 500)
+        logger.exception("Error while executing TFD pipeline")
+        return make_response(
+            jsonify({"status": "error", "message": str(e)}), 500
+        )
  
 # --- Entrypoint ---
 if __name__ == "__main__":
