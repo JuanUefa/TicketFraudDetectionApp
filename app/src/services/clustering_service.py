@@ -2,6 +2,11 @@ import logging
 import numpy as np
 import pandas as pd
 import warnings
+from sklearn.preprocessing import StandardScaler
+
+from utils.services_utils.clustering_utils import ClusteringUtils
+
+clustering_utils = ClusteringUtils()
  
 class ClusteringService:
     """
@@ -74,4 +79,55 @@ class ClusteringService:
                 logging.error(f"Error clustering {col}: {str(e)}")
  
         logging.info(f"Quantile-based clustering completed for {len(scaled_cols)} variables.")
+        return df
+    
+
+    def cluster_features_by_modality(
+        self,
+        df: pd.DataFrame,
+        numerical_features: list[str],
+        distribution_types: dict,
+        visualize: bool = False,
+    ) -> pd.DataFrame:
+        df = df.copy()
+        scaler = StandardScaler()
+        clustering_methods = clustering_utils.get_clustering_methods()
+ 
+        for feature in numerical_features:
+            modality = distribution_types.get(feature, "unimodal")
+            methods = clustering_methods.get(modality, {})
+            if not methods:
+                logging.warning(f"No clustering method found for {feature} ({modality})")
+                continue
+ 
+            method_name, model = next(iter(methods.items()))
+            logging.info(f"Clustering '{feature}' using {method_name} ({modality})")
+ 
+            try:
+                X = scaler.fit_transform(df[[feature]])
+                series_scaled = pd.Series(X.flatten(), name=feature)
+ 
+                # --- Unimodal ---
+                if method_name == "StatisticalZScore":
+                    labels = model(series_scaled)
+ 
+                # --- Multimodal (GMM) ---
+                elif method_name == "GMM":
+                    labels = model.fit_predict(X)
+ 
+                else:
+                    raise ValueError(f"Unsupported clustering method: {method_name}")
+ 
+                df[f"{feature}_cluster"] = labels
+ 
+                if visualize:
+                    if method_name == "StatisticalZScore":
+                        clustering_utils.plot_statistical_zscore(series_scaled, feature)
+                    elif method_name == "GMM":
+                        clustering_utils.plot_gmm_clusters(series_scaled, feature, model)
+ 
+            except Exception as e:
+                logging.error(f"Clustering failed for {feature}: {e}")
+                df[f"{feature}_cluster"] = np.nan
+ 
         return df

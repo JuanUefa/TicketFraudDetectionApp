@@ -125,7 +125,7 @@ def main():
     """
     Local CLI Entry Point.
     Example usage:
-        python main.py DS_LOTTERY_AI_DATA_CLEANSING_UECLF24 200
+        python main.py DS_LOTTERY_AI_DATA_CLEANSING_UECLF24 100
     """
  
     if len(sys.argv) < 2:
