@@ -7,11 +7,13 @@ import pandas as pd
 from utils.input_output_utils.env_loader import *
 from utils.logging_utils.logging_config import setup_logging
  
+from utils.services_utils.clustering_utils import ClusteringUtils
 from src.services.data_loader_service import DataLoaderService
 from src.pipelines.data_preparation_pipeline import DataPreparationPipeline
 from src.pipelines.data_transformation_pipeline import DataTransformationPipeline
 from src.pipelines.feature_engineering_pipeline import FeatureEngineeringPipeline
 from src.pipelines.clustering_pipeline import ClusteringPipeline
+from src.services.output_service import OutputService
  
  
 # --------------------------------------------------------------------------
@@ -110,7 +112,24 @@ def run_tfd_pipeline(table_name: str = None, sample_rows: int = 100, run_id: str
     df = clustering_pipeline.run(df)
     logger.info(f"Clustering complete. Shape: {df.shape}")
  
-    # --- Step 6: Save Results ---
+    # --- Step 6: Output Summaries & Visualizations ---
+    output_service = OutputService()
+    clustering_utils = ClusteringUtils()
+ 
+    # Identify numerical features again (for plotting)
+    numerical_features, _ = clustering_utils.group_features(df)
+ 
+    output_service.summarize_clustered_numerical_features(df)
+    plot_path = output_service.plot_clustered_numerical_features_grid(
+        df,
+        numerical_features=numerical_features,
+        n_cols=3,
+        save_plots=True,
+        show_plots=False  # headless for Snowflake/container
+    )
+    logger.info(f"Cluster summary reports and plots generated -> {plot_path}")
+ 
+    # --- Step 7: Save Results ---
     data_loader_service.save_df_to_snowflake(df, run_id=run_id)
     logger.info(f"Data saved successfully to Snowflake.")
     logger.info(f"Pipeline finished. Run ID: {run_id}")

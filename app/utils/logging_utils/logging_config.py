@@ -1,14 +1,25 @@
 import logging
-import os
+import sys
  
-def setup_logging(log_file: str, level: str = "INFO"):
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+def setup_logging(log_file="app.log", level=logging.INFO):
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+ 
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    console_handler.setFormatter(formatter)
+    console_handler.stream.reconfigure(encoding="utf-8") 
+    
+    # File handler
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
  
     logging.basicConfig(
-        level=getattr(logging, level.upper(), logging.INFO),
-        format="%(asctime)s | %(levelname)s | %(message)s",
-        handlers=[
-            logging.FileHandler(log_file, mode="a"),
-            logging.StreamHandler()
-        ]
+        level=level,
+        handlers=[console_handler, file_handler],
+        force=True
     )

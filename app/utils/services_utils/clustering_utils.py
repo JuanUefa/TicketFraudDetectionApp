@@ -7,6 +7,11 @@ from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
+import networkx as nx
+import scipy.cluster.hierarchy as sch
+from scipy.spatial.distance import pdist
+from networkx.algorithms.community import greedy_modularity_communities
  
  
 class ClusteringUtils:
@@ -167,3 +172,86 @@ class ClusteringUtils:
         for i, (mean, std) in enumerate(zip(means, stds)):
             logging.info(f"{feature_name} | GMM Peak {i+1}: mean={mean:.2f}, std={std:.2f}")
     
+
+        # ---------------------------------------------------------------------
+    # Graph-based Binary Clustering Utilities
+    # ---------------------------------------------------------------------
+    def merge_binary_clusters(self, df: pd.DataFrame, binary_features: list[str]) -> pd.DataFrame:
+        """
+        Merges similar binary-based clusters using hierarchical clustering on binary centroids.
+        """
+        if "graph_cluster" not in df.columns:
+            raise ValueError("Missing 'graph_cluster' column for merge operation.")
+ 
+        binary_centroids = df.groupby("graph_cluster")[binary_features].mean()
+        if binary_centroids.shape[0] < 2:
+            return df  # Nothing to merge
+ 
+        distance_matrix = pdist(binary_centroids, metric="euclidean")
+        linkage_matrix = sch.linkage(distance_matrix, method="ward")
+ 
+        merge_threshold = 0.3 * max(distance_matrix)  # Tunable parameter
+        new_cluster_labels = sch.fcluster(linkage_matrix, merge_threshold, criterion="distance")
+ 
+        cluster_mapping = dict(zip(binary_centroids.index, new_cluster_labels))
+        df["graph_cluster"] = df["graph_cluster"].map(cluster_mapping)
+ 
+        return df
+ 
+    def plot_graph(self, df: pd.DataFrame, G: nx.Graph, graph_cluster_col: str):
+        """
+        Visualizes graph clusters and adds dynamically adjusted cluster labels.
+        """
+        pos = nx.spring_layout(G, seed=42)
+        plt.figure(figsize=(6, 4))
+ 
+        nx.draw(
+            G,
+            pos,
+            node_color=df[graph_cluster_col].map(lambda x: x % 10),
+            cmap=plt.cm.viridis,
+            node_size=50,
+            alpha=0.6,
+        )
+        nx.draw_networkx_edges(G, pos, alpha=0.3)
+ 
+        label_offsets = {}
+        for cluster in df[graph_cluster_col].unique():
+            cluster_nodes = df[df[graph_cluster_col] == cluster].index
+            cluster_center = np.mean([pos[n] for n in cluster_nodes], axis=0)
+            x_offset = (cluster % 2) * 0.02 - 0.01
+            y_offset = (cluster % 3) * 0.02 - 0.01
+            label_offsets[cluster] = (cluster_center[0] + x_offset, cluster_center[1] + y_offset)
+ 
+        for cluster, (x, y) in label_offsets.items():
+            plt.text(
+                x,
+                y,
+                f"Cluster {cluster}",
+                fontsize=10,
+                color="black",
+                bbox=dict(facecolor="white", alpha=0.7),
+            )
+ 
+        plt.title("Graph-Based Clustering with Adjusted Cluster Labels")
+        plt.show()
+ 
+    def graph_binary_summary(self, df: pd.DataFrame, cluster_col: str, binary_features: list[str]) -> pd.DataFrame:
+        """
+        Summarizes the percentage of binary features per cluster,
+        and includes the number of datapoints per cluster.
+        """
+        cluster_sizes = df.groupby(cluster_col).size().rename("cluster_size")
+        binary_summary = df.groupby(cluster_col)[binary_features].mean() * 100
+        binary_summary = binary_summary.round(2)
+        summary = pd.concat([cluster_sizes, binary_summary], axis=1)
+        return summary
+ 
+    def feature_presence_per_cluster(self, binary_summary: pd.DataFrame, threshold: float = 0.3):
+        """
+        Identifies binary features significantly present in each cluster.
+        """
+        binary_features_per_cluster = binary_summary.apply(
+            lambda x: list(x[x > (threshold * 100)].index), axis=1
+        )
+        return binary_features_per_cluster
