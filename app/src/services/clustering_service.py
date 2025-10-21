@@ -145,7 +145,7 @@ class ClusteringService:
         return df
     
 
-    def graph_based_binary_clustering(self, df: pd.DataFrame, binary_features: list[str], merge_clusters: bool = True, visualize: bool = False) -> pd.DataFrame:
+    def graph_based_binary_clustering(self, df: pd.DataFrame, binary_features: list[str], merge_clusters: bool = True, visualize: bool = True) -> pd.DataFrame:
         """
         Performs graph-based clustering based on shared binary feature activations.
         Nodes = rows; edges connect samples sharing binary '1' features.
@@ -179,6 +179,7 @@ class ClusteringService:
             logging.info("Merged similar graph-based clusters using centroid similarity")
  
         # Optional visualization
+        logging.info(f"Visualization = {visualize}")
         if visualize:
             clustering_utils.plot_graph(df, G, "graph_cluster")
  

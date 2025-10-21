@@ -12,6 +12,8 @@ import networkx as nx
 import scipy.cluster.hierarchy as sch
 from scipy.spatial.distance import pdist
 from networkx.algorithms.community import greedy_modularity_communities
+
+from utils.input_output_utils.env_loader import *
  
  
 class ClusteringUtils:
@@ -150,7 +152,8 @@ class ClusteringUtils:
         plt.title(f"Distribution of {feature_name} with Z-Score Thresholds")
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        #plt.show()
+        plt.savefig(PLOTS_PATH + f"Distribution of {feature_name} with Z-Score Thresholds")
  
     def plot_gmm_clusters(self, series, feature_name, gmm_model):
         """Visualize Gaussian Mixture Model clustering."""
@@ -167,7 +170,8 @@ class ClusteringUtils:
         plt.title(f"GMM Estimated Peaks — {feature_name}")
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        #plt.show()
+        plt.savefig(PLOTS_PATH + f"GMM Estimated Peaks — {feature_name}")
  
         for i, (mean, std) in enumerate(zip(means, stds)):
             logging.info(f"{feature_name} | GMM Peak {i+1}: mean={mean:.2f}, std={std:.2f}")
@@ -234,7 +238,7 @@ class ClusteringUtils:
             )
  
         plt.title("Graph-Based Clustering with Adjusted Cluster Labels")
-        plt.show()
+        plt.savefig(PLOTS_PATH + "Graph-Based Clustering with Adjusted Cluster Labels")
  
     def graph_binary_summary(self, df: pd.DataFrame, cluster_col: str, binary_features: list[str]) -> pd.DataFrame:
         """

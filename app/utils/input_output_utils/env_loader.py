@@ -23,3 +23,4 @@ GET_SAMPLE_DATA = os.getenv("GET_SAMPLE_DATA")
 
 SERVICE_HOST = os.getenv("SERVICE_HOST")
 SERVICE_PORT = int(os.getenv("SERVICE_PORT"))
+PLOTS_PATH = os.getenv("PLOTS_PATH")

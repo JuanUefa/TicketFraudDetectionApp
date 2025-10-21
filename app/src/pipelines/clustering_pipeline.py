@@ -14,13 +14,12 @@ class ClusteringPipeline:
     def __init__(self):
         self.clustering_utils = ClusteringUtils()
         self.clustering_service = ClusteringService()
-        self.logger = logging.getLogger(__name__)
  
     # ---------------------------------------------------------------------
     # Helper 1: Log cluster summaries (mean per cluster)
     # ---------------------------------------------------------------------
     def log_cluster_summary(self, df: pd.DataFrame, stage: str):
-        self.logger.info(f"\n========== {stage.upper()} CLUSTERING SUMMARY ==========")
+        logging.info(f"\n========== {stage.upper()} CLUSTERING SUMMARY ==========")
         cluster_columns = [
             col for col in df.columns if "_cluster" in col and "binary_cluster" not in col
         ]
@@ -32,11 +31,11 @@ class ClusteringPipeline:
  
             try:
                 summary = df.groupby(cluster_col)[feature].mean().round(3)
-                self.logger.info(f"\nFeature: {feature}\n{summary.to_string()}")
+                logging.info(f"\nFeature: {feature}\n{summary.to_string()}")
             except Exception as e:
-                self.logger.warning(f"Could not summarize {feature}: {e}")
+                logging.warning(f"Could not summarize {feature}: {e}")
  
-        self.logger.info("========================================================")
+        logging.info("========================================================")
  
     # ---------------------------------------------------------------------
     # Helper 2: Refactor cluster labels
@@ -57,9 +56,9 @@ class ClusteringPipeline:
                 labels = df[cluster_col].values
                 reordered = self.clustering_service.reorder_cluster_labels(series, labels)
                 df[cluster_col] = reordered
-                self.logger.info(f"Refactored cluster labels for {feature}")
+                logging.info(f"Refactored cluster labels for {feature}")
             except Exception as e:
-                self.logger.warning(f"Failed to refactor {feature}: {e}")
+                logging.warning(f"Failed to refactor {feature}: {e}")
  
         return df
  
@@ -67,7 +66,7 @@ class ClusteringPipeline:
     # Main pipeline
     # ---------------------------------------------------------------------
     def run(self, df: pd.DataFrame) -> pd.DataFrame:
-        self.logger.info("Starting Clustering Pipeline")
+        logging.info("Starting Clustering Pipeline")
  
         # Step 1: Quantile-based clustering
         df = self.clustering_service.quantile_based_clustering(
@@ -77,7 +76,7 @@ class ClusteringPipeline:
         # Step 2: Group and classify numerical features
         numerical_features, binary_features = self.clustering_utils.group_features(df)
         distribution_types = self.clustering_utils.classify_numerical_features(df, numerical_features)
-        self.logger.info(f"Distribution types: {distribution_types}")
+        logging.info(f"Distribution types: {distribution_types}")
  
         # Step 3: Modality-based clustering
         df = self.clustering_service.cluster_features_by_modality(
@@ -95,11 +94,11 @@ class ClusteringPipeline:
 
         # Step 7: Graph-based clustering using binary flags
         if binary_features:
-            self.logger.info("Running Graph-Based Binary Clustering")
+            logging.info("Running Graph-Based Binary Clustering")
             df = self.clustering_service.graph_based_binary_clustering(
                 df, binary_features, merge_clusters=True, visualize=False
             )
-        self.logger.info("Graph-based clustering step completed successfully")
+        logging.info("Graph-based clustering step completed successfully")
  
-        self.logger.info("Clustering Pipeline completed successfully")
+        logging.info("Clustering Pipeline completed successfully")
         return df
