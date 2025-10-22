@@ -74,3 +74,6 @@ podman machine start uefa
 podman system connection default uefa
 podman system connection list
 podman info
+
+## HOW TO RUN ? 
+python main.py UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24 100
