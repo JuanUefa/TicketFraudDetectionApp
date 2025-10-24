@@ -1,0 +1,22 @@
+*.txt
+venv/
+__pycache__/
+*.pyc
+logs/
+data/
+*.csv
+
+# Python / envs
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# env / secrets
+.env
+secrets/
+*.p8
+
+# IDE
+.vscode/
+.idea/
