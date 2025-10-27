@@ -42,7 +42,7 @@ class ClusteringService:
  
                 if n_unique <= 1:
                     df[f"{col.replace('_scaled', '_cluster')}"] = 1
-                    logging.warning(f"{col}: constant values — assigned to 1 cluster")
+                    logging.info(f"{col}: constant values — assigned to 1 cluster")
                     continue
  
                 elif n_unique == 2:
@@ -59,7 +59,7 @@ class ClusteringService:
  
                 if len(bins) <= 2:
                     bins = np.linspace(series.min(), series.max(), num_clusters + 1)
-                    logging.warning(f"{col}: low variance — switched to equal-width clustering")
+                    logging.info(f"{col}: low variance — switched to equal-width clustering")
  
                 clusters = pd.cut(
                     series,
@@ -145,7 +145,8 @@ class ClusteringService:
         return df
     
 
-    def graph_based_binary_clustering(self, df: pd.DataFrame, binary_features: list[str], merge_clusters: bool = True, visualize: bool = True) -> pd.DataFrame:
+    def graph_based_binary_clustering(self, df: pd.DataFrame, binary_features: list[str], 
+                                      merge_clusters: bool = True, visualize: bool = False) -> pd.DataFrame:
         """
         Performs graph-based clustering based on shared binary feature activations.
         Nodes = rows; edges connect samples sharing binary '1' features.

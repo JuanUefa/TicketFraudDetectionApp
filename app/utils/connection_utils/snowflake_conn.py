@@ -2,14 +2,7 @@ import snowflake.connector
 from contextlib import contextmanager
 from snowflake.snowpark import Session
 
-from utils.input_output_utils.env_loader import (
-    SNOWFLAKE_USER,
-    SNOWFLAKE_AUTHENTICATOR,
-    SNOWFLAKE_ACCOUNT,
-    SNOWFLAKE_WAREHOUSE,
-    SNOWFLAKE_DATABASE,
-    SNOWFLAKE_SCHEMA,
-)
+from utils.input_output_utils.env_loader import *
  
  
 @contextmanager
@@ -32,7 +25,14 @@ def get_snowflake_connection():
 
     
 def get_snowflake_session():
-    connection_parameters = {"account": "a40937.eu-central-1", "user": "jpra@uefa.ch", "role":"ML_SPECIALIST_ROLE", "database":"UEFA_DEV_DWH", "schema":"ML_SANDBOX", "warehouse": "DA_ML_VWH", "authenticator":"externalbrowser"}
+    connection_parameters = {"account": SNOWFLAKE_ACCOUNT, 
+                             "user": SNOWFLAKE_USER, 
+                             "role": SNOWFLAKE_ROLE, 
+                             "database": SNOWFLAKE_DATABASE, 
+                             "schema": SNOWFLAKE_SCHEMA, 
+                             "warehouse": SNOWFLAKE_WAREHOUSE, 
+                             "authenticator": SNOWFLAKE_AUTHENTICATOR
+                             }
     session = Session.builder.configs(connection_parameters).create()
 
     return session

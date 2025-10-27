@@ -77,3 +77,49 @@ podman info
 
 ## HOW TO RUN ? 
 python main.py UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24 100
+
+
+## PUBLIC & PRIVATE KEYS ##
+# Generate private key
+openssl genrsa -out snowflake_rsa_key.p8 2048
+ 
+# Generate public key from private
+openssl rsa -in snowflake_rsa_key.p8 -pubout -out snowflake_rsa_key.pub
+
+cat snowflake_rsa_key.pub | sed '1d;$d' | tr -d '\n'
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3MTOdzDq2XmPE75Sk6zChIdOMfE/NkwTtrwYW7RkyO8ZpjIO80Jstq1EpzwGVeLU95OwQsRsu3FyfKsTb3udDjNMgb9ZgeYTOM9MX5YeHIb8HZ0JhDdT6VqklvWq6tfms2fTYM7lXBi2OxLlEv+mnQQWkSt+XUQ4TbdvyxtI4QScbYsIZ7PGq/8gnhfdMDJAkfP4LJ4xg/hDpxoFnwa0CA0MK4AqqqR9H/+WiOCW64GdOlN1BwhgIp/rBdZMO3XUtbnNYw4b3VKiF1A4fAuaWfBD05h2m/B4WbApvBfhPG8nUB6oouq5Ohn4WAna6U6Kz8SdPo/EcCkZxr19p8TH6wIDAQAB
+
+-- Base64-encoded public key (no headers/footers)
+alter user "jpra@uefa.ch" set rsa_public_key='MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3MTOdzDq2XmPE75Sk6zChIdOMfE/NkwTtrwYW7RkyO8ZpjIO80Jstq1EpzwGVeLU95OwQsRsu3FyfKsTb3udDjNMgb9ZgeYTOM9MX5YeHIb8HZ0JhDdT6VqklvWq6tfms2fTYM7lXBi2OxLlEv+mnQQWkSt+XUQ4TbdvyxtI4QScbYsIZ7PGq/8gnhfdMDJAkfP4LJ4xg/hDpxoFnwa0CA0MK4AqqqR9H/+WiOCW64GdOlN1BwhgIp/rBdZMO3XUtbnNYw4b3VKiF1A4fAuaWfBD05h2m/B4WbApvBfhPG8nUB6oouq5Ohn4WAna6U6Kz8SdPo/EcCkZxr19p8TH6wIDAQAB
+';
+
+docker run --env-file .env \
+  -v /path/to/key.p8:/app/secrets/snowflake_rsa_key.p8 \
+  -p 8000:8000 \
+  your_image
+
+docker run --env-file .env -v "C:/keys/snowflake_rsa_key.p8:/app/secrets/snowflake_rsa_key.p8" -p 8000:8000 -e SERVER_PORT=8000 uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest
+
+
+snow connection add `
+  --connection-name my_service_conn `
+  --account a40937.eu-central-1.privatelink `
+  --user jpra@uefa.ch `
+  --role ML_SPECIALIST_ROLE `
+  --warehouse DA_ML_DWH `
+  --database UEFA_DEV_DWH `
+  --schema ML_SANDBOX `
+  --authenticator SNOWFLAKE_JWT `
+  --private-key "C:\keys\snowflake_rsa_key.p8" `
+  --default
+
+snow connection list 
+
+snow connection test --connection my_service_conn
+
+## STOP CONTAINERS 
+docker ps 
+
+docker stop CONTAINER_ID
+
+

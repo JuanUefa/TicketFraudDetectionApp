@@ -80,7 +80,7 @@ class ClusteringPipeline:
  
         # Step 3: Modality-based clustering
         df = self.clustering_service.cluster_features_by_modality(
-            df, numerical_features, distribution_types, visualize=True
+            df, numerical_features, distribution_types, visualize=False
         )
  
         # Step 4: Log summary before refactoring
