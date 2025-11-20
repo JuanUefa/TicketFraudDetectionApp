@@ -46,19 +46,6 @@ snow connection set-default ml_sandbox
 snow connection set-default ml_sandbox_wo_user
 snow connection set-default ml_sandbox_user_ch
 
-¡¡ SIN VPN !! repo url = uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo
-docker build --rm --platform linux/amd64 -t uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest .
-
-¡¡ PROBAR EN LOCAL !!
-docker run -p 8000:8000 -e SERVER_PORT=8000 uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest
-http://localhost:8000/healthcheck
-http://localhost:8000/run
-
-¡¡ CON VPN !! 
-snow spcs image-registry token --format=JSON | docker login uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo -u 0sessiontoken --password-stdin
-
-docker push uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image
-
 
 ## PROBLEMAS CON PODMAN ##
 podman machine list
@@ -74,9 +61,6 @@ podman machine start uefa
 podman system connection default uefa
 podman system connection list
 podman info
-
-## HOW TO RUN ? 
-python main.py UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24 100
 
 
 ## PUBLIC & PRIVATE KEYS ##
@@ -123,3 +107,23 @@ docker ps
 docker stop CONTAINER_ID
 
 
+## HOW TO RUN ? 
+python main.py UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24 100
+
+¡¡ SIN VPN !! repo url = uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo
+docker build --rm --platform linux/amd64 -t uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest .
+
+¡¡ PROBAR EN LOCAL !!
+## SERVICE ##
+docker run -p 8000:8000 -e SERVER_PORT=8000 uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest
+http://localhost:8000/healthcheck
+http://localhost:8000/run
+
+## JOB ##
+docker run --rm uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest
+
+
+¡¡ CON VPN !! 
+snow spcs image-registry token --format=JSON | docker login uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo -u 0sessiontoken --password-stdin
+
+docker push uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image
