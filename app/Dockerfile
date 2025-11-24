@@ -1,18 +1,18 @@
-# ---------------------------------------------
-# Dockerfile for Ticket Fraud Detection (Job)
-# ---------------------------------------------
+# -------------------------------------
+# Ticket Fraud Detection App Dockerfile
+# -------------------------------------
  
-# Use a slim Python base image with Debian Bullseye (actively maintained)
+# Use a maintained base image (buster is deprecated)
 ARG BASE_IMAGE=python:3.10-slim-bullseye
 FROM $BASE_IMAGE
  
-# Set the working directory in the container
+# Set working directory
 WORKDIR /app
  
-# Copy all application files into the container
+# Copy app code
 COPY . .
  
-# Install system dependencies needed by some Python packages (e.g., scipy, nltk)
+# Install system dependencies (for scipy, zlib, nltk, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
@@ -21,15 +21,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
 && rm -rf /var/lib/apt/lists/*
  
-# Upgrade pip and install all required Python packages
+# Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
     python -m nltk.downloader punkt averaged_perceptron_tagger stopwords
  
-# Optional: Set environment variables
+# Expose Flask port
+ENV SERVER_PORT=8000
+EXPOSE 8000
+ 
+# Set environment variables for Snowflake
 ENV PYTHONUNBUFFERED=1
 ENV LOG_LEVEL=INFO
  
-# Default command for the container
-# This will be overridden by spcs.yaml, but helps for local testing
-CMD ["python3", "main.py"]
+# Run the batch service
+CMD ["python3", "main_service.py"]
