@@ -134,9 +134,4 @@ class OutputService:
             plt.savefig(plot_path, dpi=150, bbox_inches="tight")
             logging.info(f"[OutputService] Saved combined cluster plot grid -> {plot_path}")
     
-        if show_plots:
-            plt.show()
-        else:
-            plt.close(fig)
-    
         return plot_path
