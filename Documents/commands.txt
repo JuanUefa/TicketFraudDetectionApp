@@ -127,3 +127,9 @@ docker run --rm uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sand
 snow spcs image-registry token --format=JSON | docker login uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo -u 0sessiontoken --password-stdin
 
 docker push uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image
+
+
+#### COMANDOS GERMAN ####
+docker build --rm --platform linux/amd64 -t uefa-a40937.registry.snowflakecomputing.com/uefa_ml_dev/ml_sandbox/ticket_fraud_detection/ticket_fraud_detection_app_image:latest .
+snow spcs image-registry token --format=JSON | docker login uefa-a40937.registry.snowflakecomputing.com/uefa_ml_dev/ml_sandbox/ticket_fraud_detection -u 0sessiontoken --password-stdin
+docker push uefa-a40937.registry.snowflakecomputing.com/uefa_ml_dev/ml_sandbox/ticket_fraud_detection/ticket_fraud_detection_app_image:latest
