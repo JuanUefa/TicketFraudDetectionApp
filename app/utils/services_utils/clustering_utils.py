@@ -152,7 +152,7 @@ class ClusteringUtils:
         plt.title(f"Distribution of {feature_name} with Z-Score Thresholds")
         plt.legend()
         plt.tight_layout()
-        #plt.show()
+        #
         plt.savefig(PLOTS_PATH + f"Distribution of {feature_name} with Z-Score Thresholds")
  
     def plot_gmm_clusters(self, series, feature_name, gmm_model):
@@ -170,7 +170,7 @@ class ClusteringUtils:
         plt.title(f"GMM Estimated Peaks — {feature_name}")
         plt.legend()
         plt.tight_layout()
-        #plt.show()
+        #
         plt.savefig(PLOTS_PATH + f"GMM Estimated Peaks — {feature_name}")
  
         for i, (mean, std) in enumerate(zip(means, stds)):
