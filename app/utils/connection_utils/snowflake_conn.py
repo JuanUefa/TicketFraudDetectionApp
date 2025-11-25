@@ -1,27 +1,63 @@
 import snowflake.connector
 from contextlib import contextmanager
 from snowflake.snowpark import Session
+from cryptography.hazmat.primitives import serialization
+import os
  
-# Import environment variables (these should be defined in env_loader)
-from utils.input_output_utils.env_loader import *
+# Load environment variables
+from utils.input_output_utils.env_loader import (
+    SNOWFLAKE_USER,
+    SNOWFLAKE_AUTHENTICATOR,
+    SNOWFLAKE_ACCOUNT,
+    SNOWFLAKE_WAREHOUSE,
+    SNOWFLAKE_DATABASE,
+    SNOWFLAKE_SCHEMA,
+    SNOWFLAKE_ROLE,
+    PRIVATE_KEY_PATH,
+)
  
 # -----------------------------------------------------------------------------
-# Classic Snowflake Connection (for raw SQL execution)
+# Load RSA Private Key (for SNOWFLAKE_JWT)
+# -----------------------------------------------------------------------------
+ 
+def load_private_key():
+    """
+    Loads the RSA private key used for JWT authentication.
+    Requires PRIVATE_KEY_PATH to be set in .env.
+    """
+    if not PRIVATE_KEY_PATH:
+        raise ValueError("PRIVATE_KEY_PATH is not set in .env")
+ 
+    if not os.path.exists(PRIVATE_KEY_PATH):
+        raise FileNotFoundError(f"Private key not found at: {PRIVATE_KEY_PATH}")
+ 
+    with open(PRIVATE_KEY_PATH, "rb") as key_file:
+        return serialization.load_pem_private_key(
+            key_file.read(),
+            password=None,
+        )
+ 
+# -----------------------------------------------------------------------------
+# Classic Snowflake Connector (for raw SQL)
 # -----------------------------------------------------------------------------
  
 @contextmanager
 def get_snowflake_connection():
     """
-    Context manager that yields a Snowflake connection using the classic 
-    Python connector. Ensures the connection is properly closed after use.
+    Returns a Snowflake connection using JWT + private key.
+    Automatically closes the connection after use.
     """
+    private_key = load_private_key()
+ 
     conn = snowflake.connector.connect(
         user=SNOWFLAKE_USER,
-        authenticator=SNOWFLAKE_AUTHENTICATOR,
+        authenticator=SNOWFLAKE_AUTHENTICATOR,  # SNOWFLAKE_JWT
         account=SNOWFLAKE_ACCOUNT,
         warehouse=SNOWFLAKE_WAREHOUSE,
         database=SNOWFLAKE_DATABASE,
         schema=SNOWFLAKE_SCHEMA,
+        role=SNOWFLAKE_ROLE,
+        private_key=private_key,                # <-- Required for JWT
     )
     try:
         yield conn
@@ -29,15 +65,15 @@ def get_snowflake_connection():
         conn.close()
  
 # -----------------------------------------------------------------------------
-# Snowpark Session (for DataFrames and SPCS apps)
+# Snowpark Session
 # -----------------------------------------------------------------------------
  
 def get_snowflake_session():
     """
-    Creates and returns a Snowpark Session object using the environment 
-    variables defined in env_loader. This is the preferred method when working 
-    with Snowpark DataFrames in SPCS or data pipelines.
+    Creates a Snowpark Session using JWT + private key.
     """
+    private_key = load_private_key()
+ 
     connection_parameters = {
         "account": SNOWFLAKE_ACCOUNT,
         "user": SNOWFLAKE_USER,
@@ -45,22 +81,20 @@ def get_snowflake_session():
         "database": SNOWFLAKE_DATABASE,
         "schema": SNOWFLAKE_SCHEMA,
         "warehouse": SNOWFLAKE_WAREHOUSE,
-        "authenticator": SNOWFLAKE_AUTHENTICATOR
+        "authenticator": SNOWFLAKE_AUTHENTICATOR,
+        "private_key": private_key,   # <-- Required for JWT
     }
  
-    session = Session.builder.configs(connection_parameters).create()
-    return session
+    return Session.builder.configs(connection_parameters).create()
  
 # -----------------------------------------------------------------------------
-# Execute a SQL Query (with results)
+# Execute SQL and return results
 # -----------------------------------------------------------------------------
  
 def run_query(query: str):
     """
-    Executes a SQL query using the classic connector and returns:
-    - rows: list of tuples with the result data
-    - columns: list of column names
-    Useful for simple queries or validation, without needing Snowpark.
+    Executes SQL using the classic connector.
+    Returns rows and column names.
     """
     with get_snowflake_connection() as conn:
         with conn.cursor() as cur:

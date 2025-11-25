@@ -6,13 +6,11 @@ spec:
   containers:
     - name: tfd-job-container
       # Fully qualified image path from Snowflake container registry
-      image: uefa-a40937.registry.snowflakecomputing.com/uefa_dev_dwh/ml_sandbox/ticket_fraud_detection_image_repo/ticket_fraud_detection_app_image:latest
+      image: uefa-a40937.registry.snowflakecomputing.com/uefa_ml_dev/ml_sandbox/ticket_fraud_detection/ticket_fraud_detection_app_job_image:latest
       # Command to run in the container overrides CMD in Dockerfile
-      command: ["python3", "main.py", "UEFA_DEV_DWH.ML_SANDBOX.INPUT_TABLE", "50"]
-      # You can set environment variables here if needed
-      env:
-        - name: LOG_LEVEL
-          value: "INFO"
+      command: ["python3", "main.py", "UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24", "50"]
  
-  # Since this is a batch job, we don't want it to restart after completion
-  restartPolicy: Never
+      # Correct 'env' format (MUST be a map, not a list)
+      env:
+        LOG_LEVEL: "INFO"
+ 

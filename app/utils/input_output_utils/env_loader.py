@@ -22,19 +22,14 @@ PLOTS_PATH = os.getenv("PLOTS_PATH", "data/output/plots")
  
 # Auth method will be dynamically chosen (token or username)
 SNOWFLAKE_USER = os.getenv("SNOWFLAKE_USER")
-SNOWFLAKE_AUTHENTICATOR = os.getenv("SNOWFLAKE_AUTHENTICATOR", "externalbrowser")
+SNOWFLAKE_AUTHENTICATOR = os.getenv("SNOWFLAKE_AUTHENTICATOR")
 SNOWFLAKE_ACCOUNT = os.getenv("SNOWFLAKE_ACCOUNT")
 SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE")
 SNOWFLAKE_DATABASE = os.getenv("SNOWFLAKE_DATABASE")
 SNOWFLAKE_SCHEMA = os.getenv("SNOWFLAKE_SCHEMA")
 SNOWFLAKE_ROLE = os.getenv("SNOWFLAKE_ROLE")
+PRIVATE_KEY_PATH = os.getenv("PRIVATE_KEY_PATH")
  
 # Optional OAuth token (if present, overrides other login methods)
 SNOWFLAKE_OAUTH_TOKEN = os.getenv("SNOWFLAKE_OAUTH_TOKEN") 
  
-# -----------------------------------------------------------------------------
-# App Behavior
-# -----------------------------------------------------------------------------
-GET_SAMPLE_DATA = os.getenv("GET_SAMPLE_DATA")
-SERVICE_HOST = os.getenv("SERVICE_HOST", "0.0.0.0")
-SERVICE_PORT = int(os.getenv("SERVICE_PORT", 8000))
