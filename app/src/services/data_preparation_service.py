@@ -18,25 +18,33 @@ class DataPreparationService:
         # normalize keys here once
         self.renames_dict = {k.lower(): v for k, v in renames_dict.items()}
 
+    def normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        df.columns = df.columns.str.strip().str.lower()
+
+        return df
+
  
     def subset_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Subset df to only the relevant UECLF24 columns.
         Missing columns are ignored with a warning.
         """
+
+        self.columns_list = [col.strip().lower() for col in self.columns_list]
         existing_cols = [c for c in self.columns_list if c in df.columns]
         logging.info(f"Existing columns: {existing_cols}")
         missing_cols = set(self.columns_list) - set(existing_cols)
  
         if missing_cols:
             logging.warning(f"[subset_dataframe] Missing columns: {missing_cols}")
+
+        df = df[existing_cols].copy()
+
  
-        return df[existing_cols]
-    
-    
-    def normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        df.columns = df.columns.str.strip().str.lower()
         return df
+    
+    
+
 
  
     def rename_vars(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -47,8 +55,10 @@ class DataPreparationService:
     
         if missing:
             logging.warning(f"Missing columns during rename: {missing}")
+
+        df = df.rename(columns=valid_renames)
     
-        return df.rename(columns=valid_renames)
+        return df
     
 
     def drop_duplicates(self, df: pd.DataFrame, subset=None, keep="first") -> pd.DataFrame:
@@ -65,6 +75,7 @@ class DataPreparationService:
         after = df_clean.shape[0]
  
         logging.info(f"Dropped {before - after} duplicate rows (kept {after})")
+
         return df_clean
     
     

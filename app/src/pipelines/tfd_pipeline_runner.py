@@ -32,10 +32,12 @@ def run_tfd_pipeline(table_name: str = None, sample_rows: int = 100, run_id: str
  
     logger.info(f"Loading data from Snowflake table: {table_name}")
     df_raw = data_loader_service.load_table_dynamic(table_name, sample_rows=sample_rows)
+    print('----------------- Loaded Raw Data -----------------')
     logger.info(f"Data loaded successfully: {df_raw.shape[0]} rows × {df_raw.shape[1]} columns")
  
     data_preparation_pipeline = DataPreparationPipeline(data_loader_service, df_raw)
     df = data_preparation_pipeline.run()
+    print('----------------- Prepared Data -----------------')  
     logger.info(f"Data preparation complete. Shape: {df.shape}")
  
     data_transformation_pipeline = DataTransformationPipeline(df)

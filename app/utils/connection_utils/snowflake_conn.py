@@ -84,14 +84,43 @@ def get_snowflake_session():
 # Execute SQL and return results
 # -----------------------------------------------------------------------------
  
-def run_query(query: str):
-    """
-    Executes SQL using the classic connector.
-    Returns rows and column names.
-    """
+
+## Classic connector
+"""def run_query(query: str):
+    #Executes SQL using the classic connector.
+    #Returns rows and column names.
     with get_snowflake_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query)
             rows = cur.fetchall()
             columns = [col[0] for col in cur.description]
-    return rows, columns
+    return rows, columns"""
+
+
+## Snowpark Connector
+ 
+def run_query(query: str):
+
+    #Executes a SQL query using Snowpark and returns:
+    #- rows: list of tuples
+    #- columns: list of column names (lowercase)
+    
+    session = get_snowflake_session()
+ 
+    try:
+
+        # Ejecuta la query y convierte a pandas
+        snowpark_df = session.sql(query)
+        pandas_df = snowpark_df.to_pandas()
+        pandas_df.columns = [col.strip().lower() for col in pandas_df.columns]
+ 
+        # Columnas en minúsculas
+        columns = [col.lower() for col in pandas_df.columns]
+        # Filas como tuplas
+        rows = [tuple(row) for row in pandas_df.itertuples(index=False, name=None)]
+ 
+        return rows, columns
+ 
+    except Exception as e:
+        print(f"[ERROR] Snowpark query failed: {e}")
+        raise

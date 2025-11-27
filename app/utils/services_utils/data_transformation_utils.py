@@ -438,10 +438,6 @@ class DataTransformationUtils:
                 os.makedirs(output_dir, exist_ok=True)
                 output_dir="data/output/reports"
                 path = os.path.join(output_dir, "username_similarity_top_pairs.csv")
-                logging.info("")
-                logging.info("USERNAME SIMILARITY TOP PAIRS BUG FIX")
-                logging.info(path)
-                logging.info("")
                 refined_pairs_annot.sort_values("similarity", ascending=False).head(audit_top_k).to_csv(path, index=False)
                 _log.info("Saved top %d pairs to %s", audit_top_k, path)
             except Exception as e:

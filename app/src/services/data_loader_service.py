@@ -17,16 +17,27 @@ class DataLoaderService:
     def __init__(self):
         pass 
  
-    def data_loader(self, query_file) -> DataFrame: #tuple[DataFrame, DataFrame]:
-        logging.info(f"START - data_loading")
+    def data_loader(self, query_file) -> pd.DataFrame:
+        """
+        Loads data from a SQL file, runs the query, and returns a DataFrame
+        with lowercase and trimmed column names.
+        """
+        logging.info("START - data_loading")
     
         query = load_query(query_file)
         rows, columns = run_query(query)
-
-        df_raw = pd.DataFrame(rows, columns=columns)
-        logging.info(df_raw.shape)
-        logging.info(df_raw.head())
-
+    
+        if not rows:
+            logging.warning(f"[data_loader] Query '{query_file}' returned no rows.")
+            return pd.DataFrame()
+    
+        # Normalize column names: strip whitespace and lowercase
+        clean_columns = [col.strip().lower() for col in columns]
+        df_raw = pd.DataFrame(rows, columns=clean_columns)
+    
+        logging.info(f"[data_loader] Loaded shape: {df_raw.shape}")
+        logging.info(f"[data_loader] Head:\n{df_raw.head()}")
+    
         return df_raw
     
 
@@ -34,11 +45,11 @@ class DataLoaderService:
  
     def load_country_timezone_map(self) -> pd.DataFrame:
         df = self.data_loader("country_timezone_map.sql")
-        return df.rename(columns={"ISO2": "country", "TIMEZONE": "local_timezone"})
+        return df.rename(columns={"iso2": "country", "timezone": "local_timezone"})
  
     def load_city_country_map(self) -> pd.DataFrame:
         df = self.data_loader("city_country_map.sql")
-        return df.rename(columns={"CLEANED_CITY": "city", "COUNTRY_CODE": "expected_country_from_city"})
+        return df.rename(columns={"cleaned_city": "city", "country_code": "expected_country_from_city"})
     
 
     def load_country_code_map(self) -> pd.DataFrame:

@@ -29,8 +29,8 @@ class DataPreparationPipeline:
         df_country_iso = self.data_loader_service.load_country_code_map()
 
         df = (
-            data_preparation_service.subset_dataframe(self.df)
-            .pipe(data_preparation_service.normalize_columns)
+            data_preparation_service.normalize_columns(self.df)
+            .pipe(data_preparation_service.subset_dataframe)
             .pipe(data_preparation_service.rename_vars)
             .pipe(data_preparation_service.drop_duplicates)
             .pipe(
