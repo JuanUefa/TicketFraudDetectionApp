@@ -28,6 +28,7 @@ SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE")
 SNOWFLAKE_DATABASE = os.getenv("SNOWFLAKE_DATABASE")
 SNOWFLAKE_SCHEMA = os.getenv("SNOWFLAKE_SCHEMA")
 SNOWFLAKE_ROLE = os.getenv("SNOWFLAKE_ROLE")
+SNOWFLAKE_HOST = os.getenv("SNOWFLAKE_HOST")
 PRIVATE_KEY_PATH = os.getenv("PRIVATE_KEY_PATH")
  
 # Optional OAuth token (if present, overrides other login methods)

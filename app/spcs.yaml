@@ -7,10 +7,18 @@ spec:
     - name: tfd-job-container
       # Fully qualified image path from Snowflake container registry
       image: uefa-a40937.registry.snowflakecomputing.com/uefa_ml_dev/ml_sandbox/ticket_fraud_detection/ticket_fraud_detection_app_job_image:latest
+ 
       # Command to run in the container overrides CMD in Dockerfile
       command: ["python3", "main.py", "UEFA_DEV_DWH.ML_SANDBOX.DS_LOTTERY_AI_DATA_CLEANSING_UECLF24", "50"]
  
-      # Correct 'env' format (MUST be a map, not a list)
       env:
         LOG_LEVEL: "INFO"
- 
+        SNOWFLAKE_USER: "ML_SPECIALIST_USER"
+        SNOWFLAKE_AUTHENTICATOR: "SNOWFLAKE_JWT"
+        SNOWFLAKE_ACCOUNT: "a40937.eu-central-1.privatelink"
+        SNOWFLAKE_WAREHOUSE: "DA_ML_VWH_DEV"
+        SNOWFLAKE_DATABASE: "UEFA_ML_DEV"
+        SNOWFLAKE_SCHEMA: "ML_SANDBOX"
+        SNOWFLAKE_ROLE: "ML_SPECIALIST_ROLE"
+        SNOWFLAKE_HOST: "a40937.eu-central-1.privatelink.snowflakecomputing.com"
+        PRIVATE_KEY_PATH: "keys/rsa_key.p8"

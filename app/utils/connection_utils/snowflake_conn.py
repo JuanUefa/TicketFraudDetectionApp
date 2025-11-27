@@ -5,16 +5,7 @@ from cryptography.hazmat.primitives import serialization
 import os
  
 # Load environment variables
-from utils.input_output_utils.env_loader import (
-    SNOWFLAKE_USER,
-    SNOWFLAKE_AUTHENTICATOR,
-    SNOWFLAKE_ACCOUNT,
-    SNOWFLAKE_WAREHOUSE,
-    SNOWFLAKE_DATABASE,
-    SNOWFLAKE_SCHEMA,
-    SNOWFLAKE_ROLE,
-    PRIVATE_KEY_PATH,
-)
+from utils.input_output_utils.env_loader import *
  
 # -----------------------------------------------------------------------------
 # Load RSA Private Key (for SNOWFLAKE_JWT)
@@ -57,6 +48,7 @@ def get_snowflake_connection():
         database=SNOWFLAKE_DATABASE,
         schema=SNOWFLAKE_SCHEMA,
         role=SNOWFLAKE_ROLE,
+        host=SNOWFLAKE_HOST,
         private_key=private_key,                # <-- Required for JWT
     )
     try:
@@ -82,6 +74,7 @@ def get_snowflake_session():
         "schema": SNOWFLAKE_SCHEMA,
         "warehouse": SNOWFLAKE_WAREHOUSE,
         "authenticator": SNOWFLAKE_AUTHENTICATOR,
+        "host": SNOWFLAKE_HOST,
         "private_key": private_key,   # <-- Required for JWT
     }
  

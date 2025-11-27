@@ -11,6 +11,13 @@ WORKDIR /app
  
 # Copy all application files into the container
 COPY . .
+
+# Copy .env and key files explicitly if not included in COPY . .
+COPY .env .env
+COPY keys/ keys/
+
+# Optional: verify the key was copied (helpful for debugging)
+RUN ls -la /app/keys
  
 # Install system dependencies needed by some Python packages (e.g., scipy, nltk)
 RUN apt-get update && apt-get install -y --no-install-recommends \

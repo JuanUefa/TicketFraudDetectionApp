@@ -5,7 +5,8 @@ import sys
 # Import project utilities
 from utils.input_output_utils.env_loader import *  # Loads environment variables like table names, paths
 from utils.logging_utils.logging_config import setup_logging  # Central logging configuration
- 
+from utils.debugging.debug_infrastructure import debug_infrastructure  # Infrastructure debugging tools
+
 # Import the main pipeline logic
 from src.pipelines.tfd_pipeline_runner import run_tfd_pipeline  # Entrypoint for running the TFD pipeline
  
@@ -22,6 +23,9 @@ logger = logging.getLogger("tfd-main")
 # --------------------------------------------------------------------------
  
 def main():
+
+    debug_infrastructure()
+
     # If no arguments are provided, default to local sample execution
     if len(sys.argv) < 2:
         logger.warning("No table name provided. Running with local sample SQL.")
