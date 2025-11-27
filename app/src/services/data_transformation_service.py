@@ -393,7 +393,7 @@ class DataTransformationService:
         cluster_lsh_threshold: float = 0.55,
         cluster_link_min_sim: float = 0.65,
         audit_top_k: int = 20,
-        output_dir: str = ".",
+        output_dir: str = "data/output/reports",
     ) -> pd.DataFrame:
         """
         Wrapper so the pipeline can `.pipe(...)` this stage and still get back a DataFrame.
