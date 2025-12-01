@@ -81,6 +81,11 @@ def run_tfd_pipeline(table_name: str = None, sample_rows: int = 100, run_id: str
     fraud_scorer = FraudScoringService()
     df = fraud_scorer.run(df)
     logger.info(f"Fraud scoring complete. Shape: {df.shape}")
+
+    logger.info('----------------- Final Data -----------------')
+    logger.info(df.head())
+    logger.info(df.columns)
+    logger.info(' ')
  
     data_loader_service.save_df_to_snowflake(df, run_id=run_id)
     logger.info("Data successfully saved to Snowflake.")
