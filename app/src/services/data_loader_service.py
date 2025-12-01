@@ -1,5 +1,5 @@
 # services/data_loading.py
-
+from pathlib import Path
 import logging
 import pandas as pd
 from datetime import datetime
@@ -120,6 +120,15 @@ class DataLoaderService:
                 use_logical_type=False  # proper datetime handling
             )
     
+            # Build cross-platform path relative to repository root and ensure dirs exist
+            repo_root = Path(__file__).resolve().parents[3]
+            output_dir = repo_root / "app" / "data" / "output" / "reports"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_file = output_dir / "output_data.csv"
+
+            # Write CSV
+            df.to_csv(output_file, index=False)
+            logging.info(f"Saved local CSV report: {output_file}")
             logging.info(f"Saved successfully to {database}.{schema}.{table_name}")
             return table_name
     
